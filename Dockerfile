@@ -1,23 +1,33 @@
-# Start your image with a node base image
-FROM node:18-alpine
+# Start from the official Node image
+FROM node:16
 
-# The /app directory should act as the main application directory
+# Install optional packages often needed for compiling native modules
+RUN apt-get update && apt-get install -y \
+  build-essential \
+  python3 \
+  python3-pip \
+  git \
+  && rm -rf /var/lib/apt/lists/*
+
+# Set a working directory
 WORKDIR /app
 
-# Copy the app package and package-lock.json file
+# Copy package files and install dependencies
+# If you also use Yarn, you can run `npm install -g yarn` or switch to Yarn commands below.
 COPY package*.json ./
+RUN npm install
 
-# Copy local directories to the current local directory of our docker image (/app)
-COPY ./src ./src
-COPY ./public ./public
+# Optional: Install global dev tools, like nodemon for live reloading
+RUN npm install -g nodemon
 
-# Install node packages, install serve, build the app, and remove dependencies at the end
-RUN npm install \
-    && npm install -g serve \
-    && npm run build \
-    && rm -fr node_modules
+# Copy the rest of your source code
+COPY . .
 
+# Expose a port if needed by your app (e.g., 3000)
 EXPOSE 3000
 
-# Start the app using serve command
-CMD [ "serve", "-s", "build" ]
+# If you have a dev script that runs nodemon or similar, you can do this:
+#CMD ["npm", "run", "dev"]
+
+# Otherwise, for a typical production start:
+CMD ["npm", "start"]
